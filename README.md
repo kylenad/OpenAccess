@@ -10,6 +10,7 @@
 - Well designed modern frontend user view
 - Backend written in python
 ![alt text](techstack_diagram.svg)
+![alt text](db_schema.png)
 ### Status:
 - Early development
 
