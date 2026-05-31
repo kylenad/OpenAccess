@@ -60,5 +60,35 @@ class PostgresAdapter(DbAdapter):
         cursor.close()
         return rows
 
+    def update_cell(self, table: str, pk_col: str, pk_val, column: str, value) -> None:
+        cursor = self.conn.cursor()
+        cursor.execute(
+            f'UPDATE "{table}" SET "{column}" = %s WHERE "{pk_col}" = %s',
+            (value, pk_val)
+        )
+        self.conn.commit()
+        cursor.close()
+
+    def insert_row(self, table: str, values: dict) -> None:
+        cursor = self.conn.cursor()
+        cols = ", ".join(f'"{k}"' for k in values.keys())
+        placeholders = ", ".join(["%s"] * len(values))
+        cursor.execute(
+            f'INSERT INTO "{table}" ({cols}) VALUES ({placeholders})',
+            list(values.values())
+        )
+        self.conn.commit()
+        cursor.close()
+
+    def delete_row(self, table: str, pk_col: str, pk_val) -> None:
+        cursor = self.conn.cursor()
+        cursor.execute(
+            f'DELETE FROM "{table}" WHERE "{pk_col}" = %s',
+            (pk_val,)
+        )
+        self.conn.commit()
+        cursor.close()
+        
+
     def close(self) -> None:
         self.conn.close()

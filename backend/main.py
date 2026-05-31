@@ -5,12 +5,27 @@ from dotenv import load_dotenv
 import uvicorn
 from db.adapter import create_adapter
 from db.base import DbAdapter
+from pydantic import BaseModel
 #-------------------------------------------
 
 #env global variables
 load_dotenv()
 
 db: DbAdapter = None
+
+
+class UpdateCell(BaseModel):
+    pk_col: str
+    pk_val: str | int
+    column: str
+    value: str | int | float | None
+
+class InsertRow(BaseModel):
+    values: dict[str, str | int | float | None]
+
+class DeleteRow(BaseModel):
+    pk_col: str
+    pk_val: str | int
 
 # Startup/shutdown function
 @asynccontextmanager
@@ -40,6 +55,21 @@ def get_columns(table: str):
 @app.get("/api/tables/{table}/rows")
 def get_rows(table: str):
     return {"rows": db.get_rows(table)}  
+
+@app.patch("/api/tables/{table}/rows")
+def update_row(table: str, body: UpdateCell):
+    db.update_cell(table, body.pk_col, body.pk_val, body.column, body.value)
+    return {"ok": True}
+
+@app.post("/api/tables/{table}/rows")
+def insert_row(table: str, body: InsertRow):
+    db.insert_row(table, body.values)
+    return {"ok": True}
+
+@app.delete("/api/tables/{table}/rows")
+def delete_row(table, body: DeleteRow):
+    db.delete_row(table, body.pk_col, body.pk_val)
+    return {"ok": True}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host = "0.0.0.0", port = 8000, reload = True)
