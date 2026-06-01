@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataDesk</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.2.0/dist/tabler-icons.min.css" />
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <i class="ti ti-database"></i> Tables
+      </div>
+      <div id="table-list"></div>
+      <div class="sidebar-footer">DataDesk v1.0</div>
+    </aside>
+
+    <div class="main">
+
+      <!-- View toggle -->
+      <div id="view-toggle">
+        <button class="toggle-btn active" id="btn-provider-view">
+          <i class="ti ti-id-badge"></i> Provider Search
+        </button>
+        <button class="toggle-btn" id="btn-table-view">
+          <i class="ti ti-table"></i> Table View
+        </button>
+      </div>
+
+      <!-- ── Provider search view ── -->
+      <div id="provider-view">
+        <div id="provider-search-bar">
+          <div class="search-wrap large">
+            <i class="ti ti-search"></i>
+            <input
+              type="text"
+              id="provider-search-input"
+              placeholder="Search by provider name or NPI…"
+            />
+          </div>
+          <button class="btn btn-primary" id="btn-add-provider">
+            <i class="ti ti-plus"></i> Add provider
+          </button>
+        </div>
+        <div id="provider-results"></div>
+      </div>
+
+      <!-- ── Table view ── -->
+      <div id="table-view" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+        <div id="toolbar">
+          <span id="table-title">—</span>
+          <div class="search-wrap">
+            <i class="ti ti-search"></i>
+            <input type="text" id="search-box" placeholder="Search…" />
+          </div>
+          <button class="btn btn-primary" id="btn-add-row">
+            <i class="ti ti-plus"></i> Add row
+          </button>
+          <button class="btn" id="btn-refresh">
+            <i class="ti ti-refresh"></i> Refresh
+          </button>
+          <button class="btn" id="btn-export">
+            <i class="ti ti-download"></i> Export CSV
+          </button>
+        </div>
+        <div id="table-wrap"></div>
+        <div id="status-bar"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

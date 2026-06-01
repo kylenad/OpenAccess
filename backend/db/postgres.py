@@ -12,6 +12,7 @@ class PostgresAdapter(DbAdapter):
             user = os.getenv("PG_USER"),
             password = os.getenv("PG_PASSWORD")
         )
+        self.conn.autocommit = True
 
     def list_tables(self) -> list[str]:
         cursor = self.conn.cursor()
@@ -66,18 +67,19 @@ class PostgresAdapter(DbAdapter):
             f'UPDATE "{table}" SET "{column}" = %s WHERE "{pk_col}" = %s',
             (value, pk_val)
         )
-        self.conn.commit()
+        #self.conn.commit()
         cursor.close()
 
     def insert_row(self, table: str, values: dict) -> None:
         cursor = self.conn.cursor()
-        cols = ", ".join(f'"{k}"' for k in values.keys())
-        placeholders = ", ".join(["%s"] * len(values))
+        cleaned = {k: (None if v == "" else v) for k, v in values.items()}
+        cols = ", ".join(f'"{k}"' for k in cleaned.keys())
+        placeholders = ", ".join(["%s"] * len(cleaned))
         cursor.execute(
             f'INSERT INTO "{table}" ({cols}) VALUES ({placeholders})',
-            list(values.values())
+            list(cleaned.values())
         )
-        self.conn.commit()
+        # self.conn.commit()
         cursor.close()
 
     def delete_row(self, table: str, pk_col: str, pk_val) -> None:
@@ -86,7 +88,7 @@ class PostgresAdapter(DbAdapter):
             f'DELETE FROM "{table}" WHERE "{pk_col}" = %s',
             (pk_val,)
         )
-        self.conn.commit()
+        #self.conn.commit()
         cursor.close()
         
 
