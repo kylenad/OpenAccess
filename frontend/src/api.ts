@@ -40,9 +40,14 @@ export const api = {
       body: JSON.stringify({ values }),
     }),
 
-  deleteRow: (table: string, pkCol: string, pkVal: unknown) =>
+  deleteRow: (table: string, pkCol?: string, pkVal?: unknown, filters?: Record<string, unknown>) =>
     request<{ ok: boolean }>(`/tables/${encodeURIComponent(table)}/rows`, {
       method: "DELETE",
-      body: JSON.stringify({ pk_col: pkCol, pk_val: pkVal }),
+      body: JSON.stringify(
+        filters
+          ? { filters }
+          : { pk_col: pkCol, pk_val: pkVal }
+      ),
     }),
+  
 };

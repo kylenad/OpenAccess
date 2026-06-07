@@ -24,8 +24,9 @@ class InsertRow(BaseModel):
     values: dict[str, str | int | float | None]
 
 class DeleteRow(BaseModel):
-    pk_col: str
-    pk_val: str | int
+    pk_col: str | None = None
+    pk_val: str | int | float | None = None
+    filters: dict[str, str | int | float] | None = None
 #-------------------------------------------
 
 def validate_table(table: str):
@@ -89,7 +90,12 @@ def insert_row(table: str, body: InsertRow):
 @app.delete("/api/tables/{table}/rows")
 def delete_row(table, body: DeleteRow):
     validate_table(table)
-    db.delete_row(table, body.pk_col, body.pk_val)
+    if body.filters:
+        db.delete_row_composite(table, body.filters)
+    elif body.pk_col and body.pk_val is not None:
+        db.delete_row(table, body.pk_col, body.pk_val)
+    else:
+        raise HTTPException(status_code = 400, detail = "Provide either pk_col/pk_val or filters")
     return {"ok": True}
 #----------------------------------------------------
 

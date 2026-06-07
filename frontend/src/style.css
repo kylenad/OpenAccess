@@ -509,3 +509,51 @@ tr:hover .del-btn { opacity: 1; }
   margin-bottom: 10px;
   display: block;
 }
+
+/* ── Form divider ── */
+.form-divider {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 10px 0 4px;
+  border-top: 0.5px solid var(--border);
+  margin-top: 6px;
+}
+.form-row select {
+  padding: 6px 8px;
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+.form-row select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+/* ── Assign wrap ── */
+.assign-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+.assign-wrap select {
+  padding: 5px 8px;
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  flex: 1;
+  max-width: 300px;
+}
+.assign-wrap select:focus {
+  outline: none;
+  border-color: var(--blue);
+}

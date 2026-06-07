@@ -91,6 +91,15 @@ class PostgresAdapter(DbAdapter):
         #self.conn.commit()
         cursor.close()
         
+    def delete_row_composite(self, table: str, filters: dict) -> None:
+        cursor = self.conn.cursor()
+        conditions = " AND ".join(f'"{k}" = %s' for k in filters.keys())
+        cursor.execute(
+            f'DELETE FROM "{table}" WHERE {conditions}',
+            list(filters.values())
+        )
+        cursor.close()
+
 
     def close(self) -> None:
         self.conn.close()

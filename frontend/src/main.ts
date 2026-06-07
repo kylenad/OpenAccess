@@ -290,13 +290,15 @@ async function loadRelatedData(npi: string) {
       api.getRows("organization"),
     ]);
 
-    // Locations
+    // ── Locations ──────────────────────────────────────────────────────────
     const locContainer = document.getElementById(`locations-${npi}`)!;
     const provLocs = provLocRows.filter(r => String(r["npi"]) === npi);
+
+    locContainer.innerHTML = "";
+
     if (provLocs.length === 0) {
       locContainer.innerHTML = `<span class="chip">No locations assigned</span>`;
     } else {
-      locContainer.innerHTML = "";
       provLocs.forEach(pl => {
         const loc = locRows.find(l => String(l["loc_id"]) === String(pl["loc_id"]));
         if (!loc) return;
@@ -309,13 +311,61 @@ async function loadRelatedData(npi: string) {
       });
     }
 
-    // Organizations
+    // Location assign/change dropdown
+    document.getElementById(`loc-assign-wrap-${npi}`)?.remove();
+    const locAssignWrap = document.createElement("div");
+    locAssignWrap.className = "assign-wrap";
+    locAssignWrap.id = `loc-assign-wrap-${npi}`;
+    const locOptions = locRows.map(l =>
+      `<option value="${l["loc_id"]}">${String(l["location_name"])}</option>`
+    ).join("");
+    locAssignWrap.innerHTML = `
+      <select id="loc-select-${npi}">
+        <option value="">— Select location —</option>
+        ${locOptions}
+      </select>
+      <button class="btn btn-primary" id="loc-assign-${npi}">
+        ${provLocs.length > 0 ? "Change" : "Assign"}
+      </button>
+    `;
+    locContainer.after(locAssignWrap);
+
+    document.getElementById(`loc-assign-${npi}`)?.addEventListener("click", async () => {
+      const select = document.getElementById(`loc-select-${npi}`) as HTMLSelectElement;
+      if (!select.value) { showToast("Please select a location", "error"); return; }
+
+      try {
+        // Delete existing location assignments for this provider
+        for (const pl of provLocs) {
+          await api.deleteRow("provider_location", undefined, undefined, {
+            npi: npi,
+            loc_id: pl["loc_id"],
+          });
+        }
+        // Insert new assignment
+        await api.insertRow("provider_location", {
+          npi: npi,
+          loc_id: select.value,
+          loc_primary: "Yes",
+          update_dt: new Date().toISOString().split("T")[0],
+        });
+        showToast("Location updated");
+        // Refresh the card's related data
+        await loadRelatedData(npi);
+      } catch (e) {
+        showToast(`Failed to update location: ${e}`, "error");
+      }
+    });
+
+    // ── Organizations ──────────────────────────────────────────────────────
     const orgContainer = document.getElementById(`orgs-${npi}`)!;
     const provOrgs = provOrgRows.filter(r => String(r["npi"]) === npi);
+
+    orgContainer.innerHTML = "";
+
     if (provOrgs.length === 0) {
       orgContainer.innerHTML = `<span class="chip">No organizations assigned</span>`;
     } else {
-      orgContainer.innerHTML = "";
       provOrgs.forEach(po => {
         const org = orgRows.find(o => String(o["org_id"]) === String(po["org_id"]));
         if (!org) return;
@@ -326,6 +376,52 @@ async function loadRelatedData(npi: string) {
         orgContainer.appendChild(chip);
       });
     }
+
+    // Org assign/change dropdown
+    document.getElementById(`org-assign-wrap-${npi}`)?.remove();
+    const orgAssignWrap = document.createElement("div");
+    orgAssignWrap.className = "assign-wrap";
+    orgAssignWrap.id = `org-assign-wrap-${npi}`; 
+    const orgOptions = orgRows.map(o =>
+      `<option value="${o["org_id"]}">${String(o["legal_business_name"])}</option>`
+    ).join("");
+    orgAssignWrap.innerHTML = `
+      <select id="org-select-${npi}">
+        <option value="">— Select organization —</option>
+        ${orgOptions}
+      </select>
+      <button class="btn btn-primary" id="org-assign-${npi}">
+        ${provOrgs.length > 0 ? "Change" : "Assign"}
+      </button>
+    `;
+    orgContainer.after(orgAssignWrap);
+
+    document.getElementById(`org-assign-${npi}`)?.addEventListener("click", async () => {
+      const select = document.getElementById(`org-select-${npi}`) as HTMLSelectElement;
+      if (!select.value) { showToast("Please select an organization", "error"); return; }
+
+      try {
+        // Delete existing org assignments for this provider
+        for (const po of provOrgs) {
+          await api.deleteRow("provider_org", undefined, undefined, {
+            npi: npi,
+            org_id: po["org_id"],
+          });
+        }
+        // Insert new assignment
+        await api.insertRow("provider_org", {
+          npi: npi,
+          org_id: select.value,
+          org_primary: "Yes",
+          update_dt: new Date().toISOString().split("T")[0],
+        });
+        showToast("Organization updated");
+        await loadRelatedData(npi);
+      } catch (e) {
+        showToast(`Failed to update organization: ${e}`, "error");
+      }
+    });
+
   } catch (e) {
     showToast(`Could not load related data: ${e}`, "error");
   }
@@ -458,13 +554,54 @@ function bindTableEvents() {
 // ── Add row modal ─────────────────────────────────────────────────────────────
 async function addRow() {
   const nonPkCols = columns.slice(1);
+  const isProvider = activeTable === "provider";
+
+  // Load locations and orgs for dropdowns if adding a provider
+  let locationOptions = "";
+  let orgOptions = "";
+
+  if (isProvider) {
+    try {
+      const [locRows, orgRows] = await Promise.all([
+        api.getRows("location"),
+        api.getRows("organization"),
+      ]);
+      locationOptions = locRows.map(l =>
+        `<option value="${l["loc_id"]}">${String(l["location_name"])}</option>`
+      ).join("");
+      orgOptions = orgRows.map(o =>
+        `<option value="${o["org_id"]}">${String(o["legal_business_name"])}</option>`
+      ).join("");
+    } catch (e) {
+      showToast(`Could not load locations/orgs: ${e}`, "error");
+    }
+  }
 
   const fields = nonPkCols.map(c => `
     <div class="form-row">
-      <label>${c.name} <span class="col-type">${c.type}</span></label>
+      <label>${c.name.replace(/_/g, " ")} <span class="col-type">${c.type}</span></label>
       <input type="text" id="field-${c.name}" placeholder="${c.nullable ? "optional" : "required"}" />
     </div>
   `).join("");
+
+  const providerExtras = isProvider ? `
+    <div class="form-divider">Assign location <span class="col-type">optional</span></div>
+    <div class="form-row">
+      <label>Location</label>
+      <select id="field-location-select">
+        <option value="">— None —</option>
+        ${locationOptions}
+      </select>
+    </div>
+    <div class="form-divider">Assign organization <span class="col-type">optional</span></div>
+    <div class="form-row">
+      <label>Organization</label>
+      <select id="field-org-select">
+        <option value="">— None —</option>
+        ${orgOptions}
+      </select>
+    </div>
+  ` : "";
 
   const modal = document.createElement("div");
   modal.className = "modal-bg";
@@ -472,6 +609,7 @@ async function addRow() {
     <div class="modal">
       <h3>Add row to ${activeTable}</h3>
       ${fields}
+      ${providerExtras}
       <div class="modal-btns">
         <button class="btn" id="modal-cancel">Cancel</button>
         <button class="btn btn-primary" id="modal-confirm">Insert</button>
@@ -487,21 +625,55 @@ async function addRow() {
   modal.addEventListener("click", (e) => { if (e.target === modal) modal.remove(); });
 
   document.getElementById("modal-confirm")?.addEventListener("click", async () => {
+    // Build provider values
     const values: Record<string, unknown> = {};
     for (const col of nonPkCols) {
       const input = document.getElementById(`field-${col.name}`) as HTMLInputElement;
       const val = input.value.trim();
       values[col.name] = val === "" ? null : val;
     }
+
     try {
-      await api.insertRow(activeTable!, values);
+      // 1. Insert provider
+      await api.insertRow("provider", values);
+
+      // 2. Get the NPI that was just entered so we can link junction tables
+      const npiInput = document.getElementById("field-npi") as HTMLInputElement | null;
+      const npi = npiInput ? npiInput.value.trim() : null;
+
+      if (isProvider && npi) {
+        // 3. Optionally insert provider_location
+        const locSelect = document.getElementById("field-location-select") as HTMLSelectElement;
+        if (locSelect?.value) {
+          await api.insertRow("provider_location", {
+            npi: npi,
+            loc_id: locSelect.value,
+            loc_primary: "Yes",
+            update_dt: new Date().toISOString().split("T")[0],
+          });
+        }
+
+        // 4. Optionally insert provider_org
+        const orgSelect = document.getElementById("field-org-select") as HTMLSelectElement;
+        if (orgSelect?.value) {
+          await api.insertRow("provider_org", {
+            npi: npi,
+            org_id: orgSelect.value,
+            org_primary: "Yes",
+            update_dt: new Date().toISOString().split("T")[0],
+          });
+        }
+      }
+
       rows = await api.getRows(activeTable!);
       modal.remove();
       renderTable();
       renderStatus();
-      // Refresh provider data if we just added a provider
-      if (activeTable === "provider") await loadProviderData();
-      showToast("Row added");
+      if (activeTable === "provider") {
+        await loadProviderData();
+        renderProviderResults(providerSearchInput.value.trim());
+      }
+      showToast("Provider added");
     } catch (e) {
       showToast(`Insert failed: ${e}`, "error");
     }

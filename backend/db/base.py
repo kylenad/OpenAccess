@@ -25,5 +25,10 @@ class DbAdapter(ABC):
     def insert_row(self, table: str, values: dict) -> None:
         pass
 
+    @abstractmethod
     def delete_row(self, table: str, pk_col: str, pk_val) -> None:
+        pass
+
+    @abstractmethod
+    def delete_row_composite(self, table: str, filters: dict) -> None:
         pass
