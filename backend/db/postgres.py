@@ -2,6 +2,7 @@
 import psycopg2
 import os
 from db.base import DbAdapter
+from db.errors import handle_db_errors
 
 class PostgresAdapter(DbAdapter):
     def __init__(self):
@@ -60,7 +61,8 @@ class PostgresAdapter(DbAdapter):
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
         cursor.close()
         return rows
-
+    
+    @handle_db_errors
     def update_cell(self, table: str, pk_col: str, pk_val, column: str, value) -> None:
         cursor = self.conn.cursor()
         cursor.execute(
@@ -70,6 +72,7 @@ class PostgresAdapter(DbAdapter):
         #self.conn.commit()
         cursor.close()
 
+    @handle_db_errors
     def insert_row(self, table: str, values: dict) -> None:
         cursor = self.conn.cursor()
         cleaned = {k: (None if v == "" else v) for k, v in values.items()}
@@ -82,6 +85,7 @@ class PostgresAdapter(DbAdapter):
         # self.conn.commit()
         cursor.close()
 
+    @handle_db_errors
     def delete_row(self, table: str, pk_col: str, pk_val) -> None:
         cursor = self.conn.cursor()
         cursor.execute(
@@ -91,6 +95,7 @@ class PostgresAdapter(DbAdapter):
         #self.conn.commit()
         cursor.close()
         
+    @handle_db_errors
     def delete_row_composite(self, table: str, filters: dict) -> None:
         cursor = self.conn.cursor()
         conditions = " AND ".join(f'"{k}" = %s' for k in filters.keys())

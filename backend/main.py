@@ -76,7 +76,10 @@ def get_rows(table: str):
 def update_row(table: str, body: UpdateCell):
     validate_table(table)
     validate_column(table, body.column)
-    db.update_cell(table, body.pk_col, body.pk_val, body.column, body.value)
+    try:
+        db.update_cell(table, body.pk_col, body.pk_val, body.column, body.value)
+    except ValueError as e:
+        raise HTTPException(status_code = 400, detail = str(e))
     return {"ok": True}
 
 @app.post("/api/tables/{table}/rows")
@@ -84,18 +87,24 @@ def insert_row(table: str, body: InsertRow):
     validate_table(table)
     for col in body.values.keys():
         validate_column(table, col)
-    db.insert_row(table, body.values)
+    try:
+        db.insert_row(table, body.values)
+    except ValueError as e:
+        raise HTTPException(status_code = 400, detail = str(e))
     return {"ok": True}
 
 @app.delete("/api/tables/{table}/rows")
 def delete_row(table, body: DeleteRow):
     validate_table(table)
-    if body.filters:
-        db.delete_row_composite(table, body.filters)
-    elif body.pk_col and body.pk_val is not None:
-        db.delete_row(table, body.pk_col, body.pk_val)
-    else:
-        raise HTTPException(status_code = 400, detail = "Provide either pk_col/pk_val or filters")
+    try:
+        if body.filters:
+            db.delete_row_composite(table, body.filters)
+        elif body.pk_col and body.pk_val is not None:
+            db.delete_row(table, body.pk_col, body.pk_val)
+        else:
+            raise HTTPException(status_code = 400, detail = "Provide either pk_col/pk_val or filters")
+    except ValueError as e:
+        raise HTTPException(status_code = 400, detail = str(e))
     return {"ok": True}
 #----------------------------------------------------
 

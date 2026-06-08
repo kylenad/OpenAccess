@@ -263,6 +263,18 @@ function buildCardFields(npi: string, provider: Record<string, unknown>) {
       return;
     }
 
+    // Validate changed fields
+    const changedValues: Record<string, unknown> = {};
+    changed.forEach(col => {
+        const input = document.getElementById(`card-input-${npi}-${col.name}`) as HTMLInputElement;
+        changedValues[col.name] = input.value;
+    });
+    const saveError = validateInsertValues(changed, changedValues);
+    if (saveError) {
+        showToast(saveError, "error");
+        return;
+    }
+
     try {
       for (const col of changed) {
         const input = document.getElementById(`card-input-${npi}-${col.name}`) as HTMLInputElement;
@@ -551,6 +563,42 @@ function bindTableEvents() {
   document.getElementById("add-row-inline")?.addEventListener("click", addRow);
 }
 
+
+// ── Validation ────────────────────────────────────────────────────────────────
+function validateInsertValues(
+  cols: ColumnInfo[],
+  values: Record<string, unknown>
+): string | null {
+  for (const col of cols) {
+    const val = values[col.name];
+    const isEmpty = val === null || val === undefined || val === "";
+
+    if (!col.nullable && isEmpty) {
+      return `"${col.name.replace(/_/g, " ")}" is required and cannot be empty`;
+    }
+
+    if (!isEmpty) {
+      if (col.type === "integer" || col.type === "bigint") {
+        if (isNaN(Number(val))) {
+          return `"${col.name.replace(/_/g, " ")}" must be a whole number`;
+        }
+      }
+      if (col.type === "numeric" || col.type === "real" || col.type === "double precision") {
+        if (isNaN(parseFloat(String(val)))) {
+          return `"${col.name.replace(/_/g, " ")}" must be a number`;
+        }
+      }
+      if (col.type === "date") {
+        const d = new Date(String(val));
+        if (isNaN(d.getTime())) {
+          return `"${col.name.replace(/_/g, " ")}" must be a valid date (e.g. 2024-01-15)`;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 // ── Add row modal ─────────────────────────────────────────────────────────────
 async function addRow() {
   const nonPkCols = columns.slice(1);
@@ -632,6 +680,14 @@ async function addRow() {
       const val = input.value.trim();
       values[col.name] = val === "" ? null : val;
     }
+
+    // Validate before sending
+    const insertError = validateInsertValues(nonPkCols, values);
+    if (insertError) {
+        showToast(insertError, "error");
+        return;
+    }
+
 
     try {
       // 1. Insert provider
